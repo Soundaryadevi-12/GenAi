@@ -1,7 +1,0 @@
-Concept,Description
-Authentication,Verifies user identity
-OAuth 2.0,Authorization framework
-JWT,Token-based authentication
-Azure AD,Identity provider
-MFA,Extra security layer
-RBAC,Role-based access control

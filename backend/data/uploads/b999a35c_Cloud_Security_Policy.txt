@@ -1,0 +1,9 @@
+Cloud Security Policy
+
+This document explains authentication, OAuth 2.0, JWT, Azure AD, Multi-Factor Authentication (MFA), role-based access control (RBAC), encryption at rest, encryption in transit, API security, and Zero Trust architecture.
+
+Password policy:
+- Minimum length: 12 characters
+- Password expiry: 90 days
+
+All administrators must use MFA.

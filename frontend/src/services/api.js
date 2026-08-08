@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// In dev: baseURL is '' so Vite's /api proxy intercepts all /api/* requests.
+// In production: set VITE_API_BASE_URL to the backend origin ONLY (no /api suffix),
+//   e.g. https://your-backend.vercel.app — the /api/ prefix is included in each path below.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
@@ -11,9 +14,9 @@ const client = axios.create({
 });
 
 export const api = {
-  // Documents
+  // ── Documents ────────────────────────────────────────────────────────────────
   fetchDocuments: async () => {
-    const res = await client.get('/documents');
+    const res = await client.get('/api/documents');
     return res.data;
   },
 
@@ -22,46 +25,45 @@ export const api = {
     for (let i = 0; i < files.length; i++) {
       formData.append('files', files[i]);
     }
-    const res = await client.post('/documents/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+    const res = await client.post('/api/documents/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
     });
     return res.data;
   },
 
   fetchDocumentStatus: async (docId) => {
-    const res = await client.get(`/documents/${docId}/status`);
+    const res = await client.get(`/api/documents/${docId}/status`);
     return res.data;
   },
 
   deleteDocument: async (docId) => {
-    const res = await client.delete(`/documents/${docId}`);
+    const res = await client.delete(`/api/documents/${docId}`);
     return res.data;
   },
 
-  // RAG Chat
+  // ── RAG Chat ─────────────────────────────────────────────────────────────────
   queryRAGChat: async (question, history = []) => {
-    const res = await client.post('/query', { question, history });
+    const res = await client.post('/api/query', { question, history });
     return res.data;
   },
 
-  // Knowledge Graph
+  // ── Knowledge Graph ───────────────────────────────────────────────────────────
   fetchGraphData: async () => {
-    const res = await client.get('/graph/data');
+    const res = await client.get('/api/graph/data');
     return res.data;
   },
 
   fetchNodeDetails: async (nodeId) => {
-    const res = await client.get(`/graph/nodes/${nodeId}`);
+    const res = await client.get(`/api/graph/nodes/${nodeId}`);
     return res.data;
   },
 
-  // Dashboard Metrics
+  // ── Dashboard Metrics ─────────────────────────────────────────────────────────
   fetchDashboardMetrics: async () => {
-    const res = await client.get('/graph/metrics');
+    const res = await client.get('/api/graph/metrics');
     return res.data;
   },
 };
 
 export default api;
+
