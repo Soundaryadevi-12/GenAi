@@ -171,6 +171,9 @@ class RAGService:
                     "using ONLY the retrieved document contexts below. Always cite relevant facts.\n\n"
                     f"Context:\n{context_str}\n\nUser Question: {question}\nAnswer:"
                 )
+                print(f"\n[RAGService] --- Final LLM Prompt ({len(prompt)} chars) ---")
+                print(f"{prompt[:500]}...\n-----------------------------------------------\n")
+                
                 response = llm.invoke(prompt)
                 answer_text = response.content
                 return QueryResponse(
@@ -224,21 +227,38 @@ class RAGService:
                 results = self.collection.query(
                     query_embeddings=[query_vector],
                     n_results=min(top_k, max(1, self.collection.count())),
-                    include=["documents", "metadatas", "distances"]
+                    include=["documents", "metadatas", "embeddings"]
                 )
                 retrieved = []
                 if results and results.get("documents") and len(results["documents"][0]) > 0:
                     docs = results["documents"][0]
                     metas = results["metadatas"][0]
-                    distances = results.get("distances", [[]])[0]
-                    for i, (doc, meta, dist) in enumerate(zip(docs, metas, distances)):
-                        # Filter: only include chunks at or below the max distance (at or above threshold similarity)
-                        if dist <= max_distance:
-                            retrieved.append({"text": doc, "metadata": meta, "similarity": round(1.0 - dist, 4)})
+                    embs = results.get("embeddings", [[]])[0]
+                    
+                    for i, (doc, meta, emb) in enumerate(zip(docs, metas, embs)):
+                        # Manually compute cosine similarity to avoid ChromaDB distance metric ambiguity (L2 vs Cosine)
+                        score = self._cosine_similarity(query_vector, emb)
+                        if score >= threshold:
+                            retrieved.append({"text": doc, "metadata": meta, "similarity": round(score, 4)})
+                    
+                    # Sort retrieved by similarity descending
+                    retrieved.sort(key=lambda x: x["similarity"], reverse=True)
+                    
+                    print("\n[RAGService] --- Retrieval Results ---")
                     if retrieved:
-                        print(f"[RAGService] {len(retrieved)}/{len(docs)} chunks met threshold ≥{threshold} (distances filtered at ≤{max_distance:.2f})")
+                        print(f"Found {len(retrieved)}/{len(docs)} chunks meeting threshold ≥{threshold}:")
+                        for idx, r in enumerate(retrieved):
+                            snippet = r["text"].replace("\n", " ")[:60]
+                            print(f"  [{idx+1}] Score: {r['similarity']:.4f} | Doc: {r['metadata'].get('filename')} | Snippet: {snippet}...")
                     else:
-                        print(f"[RAGService] All {len(docs)} chunks were below similarity threshold {threshold}. Closest distance: {min(distances):.4f}")
+                        if len(embs) > 0:
+                            max_score = max(self._cosine_similarity(query_vector, e) for e in embs)
+                            print(f"All {len(docs)} chunks were BELOW similarity threshold {threshold}.")
+                            print(f"Closest chunk had similarity score: {max_score:.4f}")
+                        else:
+                            print("No chunks returned from ChromaDB query.")
+                    print("--------------------------------------\n")
+                    
                     return retrieved
             except Exception as e:
                 print(f"[RAGService] ChromaDB query error: {e}")
@@ -268,7 +288,7 @@ class RAGService:
         return [x / norm for x in vec]
 
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
-        if not vec1 or not vec2:
+        if len(vec1) == 0 or len(vec2) == 0:
             return 0.0
         min_len = min(len(vec1), len(vec2))
         dot = sum(vec1[i] * vec2[i] for i in range(min_len))

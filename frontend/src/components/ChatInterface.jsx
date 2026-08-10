@@ -174,23 +174,7 @@ export const ChatInterface = ({ documentCount }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Questions */}
-      {messages.length <= 2 && (
-        <div className="px-6 py-2 bg-slate-900/40 border-t border-slate-800/60 flex items-center space-x-2 overflow-x-auto">
-          <span className="text-[11px] font-bold text-slate-400 whitespace-nowrap flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-cyan-400" /> Try Asking:
-          </span>
-          {sampleQuestions.map((q, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSend(q)}
-              className="text-xs px-3 py-1 rounded-full bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700 whitespace-nowrap transition-colors"
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      )}
+
 
       {/* Input Bar */}
       <div className="p-4 bg-slate-900 border-t border-slate-800">
